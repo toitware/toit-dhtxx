@@ -1,1 +1,2 @@
-# Toit Package File.
+environment:
+  sdk: ^1.7.0
