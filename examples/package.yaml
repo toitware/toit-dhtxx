@@ -1,0 +1,5 @@
+dependencies:
+  dht11:
+    path: ..
+  dht22:
+    path: ..
