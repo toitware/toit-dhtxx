@@ -3,8 +3,6 @@
 // in the LICENSE file.
 
 import rmt
-import one_wire
-
 
 class DhtResult:
   /** Temperature read from the DHTxx sensor in degrees Celcius. */
@@ -44,8 +42,7 @@ abstract class Driver:
 
     tx_.config_tx --idle_level=1
     rx_.config_rx --filter_ticks_thresh=10 --idle_threshold=18_020 --rx_buffer_size=1024
-
-    one_wire.ow_config_pin_ rx_.pin.num rx_.num tx_.num
+    tx_.config_bidirectional_pin
 
     ready_time_ = Time.now + (Duration --s=1)
 
