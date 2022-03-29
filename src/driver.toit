@@ -99,20 +99,20 @@ abstract class Driver:
   read_data_ -> ByteArray:
     if ready_time_: wait_for_ready_
 
-    signals := rmt.Signals.alternating --first_level=0 [18_000, 5_000]
-    received_signals := rmt.transmit_and_receive --rx=rx_ --tx=tx_ 178 --receive=signals
+    transmit := rmt.Signals.alternating --first_level=0 [18_000,0]
+    receive := rmt.Signals.alternating --first_level=1 [5_000]
+    received_signals := rmt.transmit_and_receive --rx=rx_ --tx=tx_ 178 --receive=receive --transmit=transmit
 
-    // We need to receive at least 84 signals.
-    // We signal begin:                        2 signals
+    // We need to receive at least 82 signals.
     // DHT signal begin transmission:          2 signals
     // DHT transmit 40 bit, 2 signals each:   80 signals
     //                                        ----------
-    // Total                                  84 signals
-    if received_signals.size < 40 * 2 + 4: throw "insufficient signals from DHT"
+    // Total                                  82 signals
+    if received_signals.size < 40 * 2 + 2: throw "insufficient signals from DHT"
 
     result_data := ByteArray 5: 0
     40.repeat:
-      bit := (received_signals.signal_period 4 + 2 * it + 1) > 32 ? 1 : 0
+      bit := (received_signals.signal_period 1 + 2 * it + 1) > 32 ? 1 : 0
       index := it / 8
       result_data[index] <<= 1
       result_data[index] = result_data[index] | bit
