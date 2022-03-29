@@ -41,7 +41,7 @@ abstract class Driver:
     tx_ = tx
 
     tx_.config_tx --idle_level=1
-    rx_.config_rx --filter_ticks_thresh=10 --idle_threshold=18_020 --rx_buffer_size=1024
+    rx_.config_rx --filter_ticks_thresh=20 --idle_threshold=18_020 --rx_buffer_size=512
     tx_.config_bidirectional_pin
 
     ready_time_ = Time.now + (Duration --s=1)
