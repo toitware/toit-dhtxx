@@ -96,11 +96,11 @@ abstract class Driver:
 
   The DHTxx receiver must send the expected signals.
   */
-  read_data_ -> ByteArray?:
+  read_data_ -> ByteArray:
     if ready_time_: wait_for_ready_
 
     signals := rmt.Signals.alternating --first_level=0 [18_000, 5_000]
-    received_signals := rmt.transfer_and_receive --rx=rx_ --tx=tx_ signals 178
+    received_signals := rmt.transmit_and_receive --rx=rx_ --tx=tx_ 178 --receive=signals
 
     // We need to receive at least 84 signals.
     // We signal begin:                        2 signals
