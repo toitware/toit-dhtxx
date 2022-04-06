@@ -3,6 +3,7 @@
 // in the LICENSE file.
 
 import rmt
+import gpio
 
 class DhtResult:
   /** Temperature read from the DHTxx sensor in degrees Celcius. */
@@ -33,12 +34,14 @@ abstract class Driver:
 
   rx_/rmt.Channel
   tx_/rmt.Channel
+  max_retries_/int
 
   ready_time_/Time? := null
 
-  constructor --rx/rmt.Channel --tx/rmt.Channel:
-    rx_ = rx
-    tx_ = tx
+  constructor pin/gpio.Pin --rx_channel_num/int --tx_channel_num/int --max_retries/int:
+    max_retries_ = max_retries
+    rx_ = rmt.Channel pin rx_channel_num
+    tx_ = rmt.Channel pin tx_channel_num
 
     tx_.config_tx --idle_level=1
     rx_.config_rx --filter_ticks_thresh=20 --idle_threshold=18_020 --rx_buffer_size=512
@@ -46,47 +49,34 @@ abstract class Driver:
 
     ready_time_ = Time.now + (Duration --s=1)
 
-  /**
-  Reads the humidity and temperature.
-
-  Returns null if the sensor data is corrupt.
-  */
-  read -> DhtResult?:
+  /** Reads the humidity and temperature. */
+  read -> DhtResult:
     data := read_data_
-    if not is_valid_crc_ data: return null
 
     return DhtResult.init_
-        temperature_ data
-        humidity_ data
+        parse_temperature_ data
+        parse_humidity_ data
 
-  /**
-  Reads the temperature.
+  /** Reads the temperature. */
+  read_temperature -> float:
+    return parse_temperature_ read_data_
 
-  Returns null if the sensor data is corrupt.
-  */
-  read_temperature -> float?:
-    data := read_data_
-    if not is_valid_crc_ data: return null
+  /** Reads the humidity. */
+  read_humidity -> float:
+    return parse_humidity_ read_data_
 
-    return temperature_ data
+  abstract parse_temperature_ data/ByteArray -> float
+  abstract parse_humidity_ data/ByteArray -> float
 
-  /**
-  Reads the humidity.
+  /** Checks that the data's checksum matches the humidity and temperature data. */
+  check_checksum_ data/ByteArray:
+    if not (data.size == 5 and (data[0] + data[1] + data[2] + data[3]) & 0xFF == data[4]):
+      throw "Invalid checksum"
 
-  Returns null if the sensor data is corrupt.
-  */
-  read_humidity -> float?:
-    data := read_data_
-    if not is_valid_crc_ data: return null
-
-    return humidity_ data
-
-  abstract temperature_ data/ByteArray -> float
-  abstract humidity_ data/ByteArray -> float
-
-  /** Whether the data checksum matches the humidity and temperature data. */
-  is_valid_crc_ data/ByteArray -> bool:
-    return data.size == 5 and (data[0] + data[1] + data[2] + data[3]) & 0xFF == data[4]
+  read_data_ -> ByteArray:
+    (max_retries_ - 1).repeat:
+      catch: return read_data_no_catch_
+    return read_data_no_catch_
 
   /**
   Reads the data from the DHTxx.
@@ -96,7 +86,7 @@ abstract class Driver:
 
   The DHTxx receiver must send the expected signals.
   */
-  read_data_ -> ByteArray:
+  read_data_no_catch_ -> ByteArray:
     if ready_time_: wait_for_ready_
 
     transmit := rmt.Signals.alternating --first_level=0 [18_000,0]
@@ -117,6 +107,7 @@ abstract class Driver:
       result_data[index] <<= 1
       result_data[index] = result_data[index] | bit
 
+    check_checksum_ result_data
     return result_data
 
   wait_for_ready_:
