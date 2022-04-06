@@ -69,7 +69,7 @@ abstract class Driver:
   abstract parse_humidity_ data/ByteArray -> float
 
   /** Checks that the data's checksum matches the humidity and temperature data. */
-  check_crc_ data/ByteArray:
+  check_checksum_ data/ByteArray:
     if not (data.size == 5 and (data[0] + data[1] + data[2] + data[3]) & 0xFF == data[4]):
       throw "Invalid checksum"
 
@@ -107,7 +107,7 @@ abstract class Driver:
       result_data[index] <<= 1
       result_data[index] = result_data[index] | bit
 
-    check_crc_ result_data
+    check_checksum_ result_data
     return result_data
 
   wait_for_ready_:
