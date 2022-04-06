@@ -70,7 +70,7 @@ abstract class Driver:
 
     return temperature_ data
 
-    /**
+  /**
   Reads the humidity.
 
   Returns null if the sensor data is corrupt.
