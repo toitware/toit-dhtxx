@@ -3,10 +3,28 @@
 // in the LICENSE file.
 
 import gpio
+import rmt
 import binary show BIG_ENDIAN
 import .driver as driver
 
+/** Deprecated. Use $Dht22 instead. */
+class Driver extends Dht22:
+  /** Deprecated. Use $(Dht22.constructor --rx --tx --max_retries) instead. */
+  constructor --rx/rmt.Channel --tx/rmt.Channel:
+    super --rx=rx --tx=tx
+
 class Dht22 extends driver.Driver:
+
+  /**
+  Constructs an instance of the Dht22 driver, using the given RMT channels.
+
+  Both channels must operate on the pin that is connected to the DHT11's data pin.
+
+  When the communication between the DHT22 and the device is flaky tries up to
+    $max_retries before giving up.
+  */
+  constructor --rx/rmt.Channel --tx/rmt.Channel --max_retries/int=3:
+    super --rx=rx --tx=tx --max_retries=max_retries
 
   /**
   Constructs an instance of the Dht22 driver.
@@ -17,7 +35,9 @@ class Dht22 extends driver.Driver:
     $max_retries before giving up.
   */
   constructor pin/gpio.Pin --rx_channel_num/int=0 --tx_channel_num/int=1 --max_retries/int=3:
-    super pin --rx_channel_num=rx_channel_num --tx_channel_num=tx_channel_num --max_retries=max_retries
+    rx_channel := rmt.Channel pin rx_channel_num
+    tx_channel := rmt.Channel pin tx_channel_num
+    super --rx=rx_channel --tx=tx_channel --max_retries=max_retries
 
   parse_temperature_ data/ByteArray -> float:
     return (BIG_ENDIAN.uint16 data driver.Driver.TEMPERATURE_INTEGRAL_PART_) / 10.0

@@ -38,11 +38,10 @@ abstract class Driver:
 
   ready_time_/Time? := null
 
-  constructor pin/gpio.Pin --rx_channel_num/int --tx_channel_num/int --max_retries/int:
+  constructor --rx/rmt.Channel --tx/rmt.Channel --max_retries/int:
     max_retries_ = max_retries
-    rx_ = rmt.Channel pin rx_channel_num
-    tx_ = rmt.Channel pin tx_channel_num
-
+    rx_ = rx
+    tx_ = tx
     tx_.config_tx --idle_level=1
     rx_.config_rx --filter_ticks_thresh=20 --idle_threshold=18_020 --rx_buffer_size=512
     tx_.config_bidirectional_pin
