@@ -2,7 +2,7 @@
 
 Drivers for the DHT11 and DHT22 (aka AM2302 or RHT03) humidity and temperature sensors.
 
-The DHT22 is a more luxurious version of the DHT11, providing more accurate readings.
+The DHT22 is a more advanced version of the DHT11, providing more accurate readings.
 
 Both use one wire to communicate with the host. The protocol is similar, but the interpretation of
 the data is different. As such, the DHT11 and DHT22 drivers are not interchangeable but share a
