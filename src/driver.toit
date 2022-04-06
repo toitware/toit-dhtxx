@@ -46,7 +46,7 @@ abstract class Driver:
 
     ready_time_ = Time.now + (Duration --s=1)
 
-    /**
+  /**
   Reads the humidity and temperature.
 
   Returns null if the sensor data is corrupt.

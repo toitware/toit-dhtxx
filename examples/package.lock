@@ -1,6 +1,5 @@
 prefixes:
-  dht11: ..
-  dht22: ..
+  dhtxx: ..
 packages:
   ..:
     path: ..
