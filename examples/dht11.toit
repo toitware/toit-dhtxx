@@ -2,7 +2,7 @@
 // Use of this source code is governed by a Zero-Clause BSD license that can
 // be found in the EXAMPLES_LICENSE file.
 
-import dht11
+import dhtxx.dht11
 import gpio
 import rmt
 
@@ -19,4 +19,4 @@ main:
   driver := dht11.Driver --rx=rx_channel --tx=tx_channel
 
   (Duration --s=5).periodic:
-    print "$driver.read"
+    print driver.read
