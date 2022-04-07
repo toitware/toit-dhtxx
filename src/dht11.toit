@@ -6,12 +6,6 @@ import gpio
 import rmt
 import .driver as driver
 
-/** Deprecated. Use $Dht11 instead. */
-class Driver extends Dht11:
-  /** Deprecated. Use $(Dht11.constructor --rx --tx --max_retries) instead. */
-  constructor --rx/rmt.Channel --tx/rmt.Channel:
-    super --rx=rx --tx=tx
-
 class Dht11 extends driver.Driver:
 
   /**
@@ -27,9 +21,11 @@ class Dht11 extends driver.Driver:
 
   /**
   Constructs an instance of the Dht11 driver.
+
   Uses RMT (ESP's Remote Control peripheral) to talk to the sensor. It allocates
     two RMT channels with the given $rx_channel_num and $tx_channel_num numbers.
     These RMT channels must be unused.
+
   When the communication between the DHT11 and the device is flaky tries up to
     $max_retries before giving up.
   */

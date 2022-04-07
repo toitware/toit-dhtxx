@@ -7,12 +7,6 @@ import rmt
 import binary show BIG_ENDIAN
 import .driver as driver
 
-/** Deprecated. Use $Dht22 instead. */
-class Driver extends Dht22:
-  /** Deprecated. Use $(Dht22.constructor --rx --tx --max_retries) instead. */
-  constructor --rx/rmt.Channel --tx/rmt.Channel:
-    super --rx=rx --tx=tx
-
 class Dht22 extends driver.Driver:
 
   /**
@@ -28,9 +22,11 @@ class Dht22 extends driver.Driver:
 
   /**
   Constructs an instance of the Dht22 driver.
+
   Uses RMT (ESP's Remote Control peripheral) to talk to the sensor. It allocates
     two RMT channels with the given $rx_channel_num and $tx_channel_num numbers.
     These RMT channels must be unused.
+
   When the communication between the DHT22 and the device is flaky tries up to
     $max_retries before giving up.
   */
