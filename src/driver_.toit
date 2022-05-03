@@ -44,7 +44,7 @@ abstract class Driver:
         --in_channel_id=in_channel_id
         --out_channel_id=out_channel_id
         --in_filter_ticks_threshold=20
-        --in_idle_threshold=25_000 // 18_020
+        --in_idle_threshold=25_000
         --in_buffer_size=512
 
     ready_time_ = Time.now + (Duration --s=1)
