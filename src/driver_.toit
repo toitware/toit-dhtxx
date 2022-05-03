@@ -32,20 +32,20 @@ abstract class Driver:
   static TEMPERATURE_DECIMAL_PART_  ::= 3
   static CHECKSUM_PART_             ::= 4
 
-  rx_/rmt.Channel
-  tx_/rmt.Channel
-  max_retries_/int
+  channel_ /rmt.BidirectionalChannel
+  max_retries_ /int
 
-  ready_time_/Time? := null
+  ready_time_/Time? := ?
 
-  constructor pin/gpio.Pin --rx_channel_num/int --tx_channel_num/int --max_retries/int:
+  constructor pin/gpio.Pin --in_channel_id/int?=null --out_channel_id/int?=null --max_retries/int:
     max_retries_ = max_retries
-    rx_ = rmt.Channel pin rx_channel_num
-    tx_ = rmt.Channel pin tx_channel_num
 
-    tx_.config_tx --idle_level=1
-    rx_.config_rx --filter_ticks_thresh=20 --idle_threshold=18_020 --rx_buffer_size=512
-    tx_.config_bidirectional_pin
+    channel_ = rmt.BidirectionalChannel pin
+        --in_channel_id=in_channel_id
+        --out_channel_id=out_channel_id
+        --in_filter_ticks_threshold=20
+        --in_idle_threshold=25_000 // 18_020
+        --in_buffer_size=512
 
     ready_time_ = Time.now + (Duration --s=1)
 
@@ -74,7 +74,7 @@ abstract class Driver:
       throw "Invalid checksum"
 
   read_data_ -> ByteArray:
-    (max_retries_ - 1).repeat:
+    max_retries_.repeat:
       catch: return read_data_no_catch_
     return read_data_no_catch_
 
@@ -89,20 +89,31 @@ abstract class Driver:
   read_data_no_catch_ -> ByteArray:
     if ready_time_: wait_for_ready_
 
-    transmit := rmt.Signals.alternating --first_level=0 [18_000,0]
-    receive := rmt.Signals.alternating --first_level=1 [5_000]
-    received_signals := rmt.transmit_and_receive --rx=rx_ --tx=tx_ 178 --receive=receive --transmit=transmit
+    // Pull low for 20ms to start the transmission.
+    signals := rmt.Signals 1
+    signals.set 0 --level=0 --period=20_000
+    received_signals := channel_.write_and_read --during_read=signals 178
 
-    // We need to receive at least 82 signals.
+    // We need to receive at least 84 signals.
+    // Initiate the transmission. Pull low:    1 signal
+    // Pull high and hand over to the DHT:     1 signal
     // DHT signal begin transmission:          2 signals
     // DHT transmit 40 bit, 2 signals each:   80 signals
     //                                        ----------
-    // Total                                  82 signals
-    if received_signals.size < 40 * 2 + 2: throw "insufficient signals from DHT"
+    // Total                                  84 signals
+    //
+    // There should be a trailing 0 signal, followed by the end-marker, but we
+    // don't care for them.
+    if received_signals.size < 4 + 40 * 2:
+      throw "insufficient signals from DHT"
 
+    // Each bit starts with 50us low, followed by ~25us for 0 or ~70us for 1.
+    // We only need to look at the 1s.
+
+    offset := 5  // Skip over the initial handshake, and the 0 of the first bit.
     result_data := ByteArray 5: 0
     40.repeat:
-      bit := (received_signals.signal_period 1 + 2 * it + 1) > 32 ? 1 : 0
+      bit := (received_signals.period 2 * it + offset) > 32 ? 1 : 0
       index := it / 8
       result_data[index] <<= 1
       result_data[index] = result_data[index] | bit

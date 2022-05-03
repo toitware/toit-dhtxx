@@ -4,6 +4,6 @@
 
 import .dht11 show Dht11
 import .dht22 show Dht22
-import .driver show DhtResult
+import .driver_ show DhtResult
 
 export *
