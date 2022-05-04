@@ -10,7 +10,7 @@ class Dht11 extends driver.Driver:
   /**
   Constructs an instance of the Dht11 driver.
   Uses RMT (ESP's Remote Control peripheral) to talk to the sensor. It allocates
-    two RMT channels. If the $in_channel_id and $out_channel_id is provided, uses
+    two RMT channels. If the $in_channel_id and/or $out_channel_id is provided, uses
     those channels, otherwise picks the first free ones.
   When the communication between the DHT11 and the device is flaky tries up to
     $max_retries before giving up.
