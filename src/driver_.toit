@@ -32,7 +32,8 @@ abstract class Driver:
   static TEMPERATURE_DECIMAL_PART_  ::= 3
   static CHECKSUM_PART_             ::= 4
 
-  channel_ /rmt.BidirectionalChannel
+  channel_in_  /rmt.Channel
+  channel_out_ /rmt.Channel
   max_retries_ /int
 
   ready_time_/Time? := ?
@@ -40,12 +41,14 @@ abstract class Driver:
   constructor pin/gpio.Pin --in_channel_id/int?=null --out_channel_id/int?=null --max_retries/int:
     max_retries_ = max_retries
 
-    channel_ = rmt.BidirectionalChannel pin
-        --in_channel_id=in_channel_id
-        --out_channel_id=out_channel_id
-        --in_filter_ticks_threshold=20
-        --in_idle_threshold=25_000
-        --in_buffer_size=512
+    // The out channel must be configured before the in channel, so that make_bidirectional works.
+    channel_out_ = rmt.Channel --output pin --channel_id=out_channel_id
+    channel_in_ = rmt.Channel --input pin
+        --channel_id=in_channel_id
+        --filter_ticks_threshold=20
+        --idle_threshold=100
+
+    rmt.Channel.make_bidirectional --in=channel_in_ --out=channel_out_
 
     ready_time_ = Time.now + (Duration --s=1)
 
@@ -90,30 +93,32 @@ abstract class Driver:
     if ready_time_: wait_for_ready_
 
     // Pull low for 20ms to start the transmission.
-    signals := rmt.Signals 1
-    signals.set 0 --level=0 --period=20_000
-    received_signals := channel_.write_and_read --during_read=signals 178
+    start_signal := rmt.Signals 1
+    start_signal.set 0 --level=0 --period=20_000
+    channel_in_.start_reading
+    channel_out_.write start_signal
+    response := channel_in_.read
+    channel_in_.stop_reading
 
-    // We need to receive at least 84 signals.
-    // Initiate the transmission. Pull low:    1 signal
-    // Pull high and hand over to the DHT:     1 signal
-    // DHT signal begin transmission:          2 signals
-    // DHT transmit 40 bit, 2 signals each:   80 signals
-    //                                        ----------
-    // Total                                  84 signals
-    //
-    // There should be a trailing 0 signal, followed by the end-marker, but we
-    // don't care for them.
-    if received_signals.size < 4 + 40 * 2:
+    // We expect to see:
+    // - high after the start-signal (level=1, ~24-40us)
+    // - DHT response signal (80us)
+    // - DHT high after response signal (80us)
+    // - all signals, each:
+    //   * low: 50us
+    //   * high: 26-28us for 0, or 70us for 1
+    // - a trailing 0.
+
+    if response.size < 3 + 40 * 2:
       throw "insufficient signals from DHT"
 
     // Each bit starts with 50us low, followed by ~25us for 0 or ~70us for 1.
     // We only need to look at the 1s.
 
-    offset := 5  // Skip over the initial handshake, and the 0 of the first bit.
+    offset := 4  // Skip over the initial handshake, and the 0 of the first bit.
     result_data := ByteArray 5: 0
     40.repeat:
-      bit := (received_signals.period 2 * it + offset) > 32 ? 1 : 0
+      bit := (response.period 2 * it + offset) > 32 ? 1 : 0
       index := it / 8
       result_data[index] <<= 1
       result_data[index] = result_data[index] | bit
