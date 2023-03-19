@@ -32,9 +32,10 @@ abstract class Driver:
   static TEMPERATURE_DECIMAL_PART_  ::= 3
   static CHECKSUM_PART_             ::= 4
 
-  channel_in_  /rmt.Channel
-  channel_out_ /rmt.Channel
-  max_retries_ /int
+  channel_in_    /rmt.Channel
+  channel_out_   /rmt.Channel
+  max_retries_   /int
+  is_first_read_ /bool := true
 
   ready_time_/Time? := ?
 
@@ -42,7 +43,10 @@ abstract class Driver:
     max_retries_ = max_retries
 
     // The out channel must be configured before the in channel, so that make_bidirectional works.
-    channel_out_ = rmt.Channel --output pin --channel_id=out_channel_id
+    channel_out_ = rmt.Channel pin
+        --output
+        --channel_id=out_channel_id
+        --idle_level=1
     channel_in_ = rmt.Channel --input pin
         --channel_id=in_channel_id
         --filter_ticks_threshold=20
@@ -77,9 +81,18 @@ abstract class Driver:
       throw "Invalid checksum"
 
   read_data_ -> ByteArray:
-    max_retries_.repeat:
-      catch: return read_data_no_catch_
-    return read_data_no_catch_
+    attempts := max_retries_ + 1
+    if is_first_read_:
+      // Due to the way we set up the RMT channels, there might be some
+      // pulses on the data line which can confuse the DHT. The very first
+      // read thus sometimes fails.
+      attempts++
+      is_first_read_ = false
+    attempts.repeat:
+      catch --unwind=(it == attempts):
+        with_timeout --ms=1_000:
+          return read_data_no_catch_
+    unreachable
 
   /**
   Reads the data from the DHTxx.
