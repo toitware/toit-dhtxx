@@ -89,7 +89,7 @@ abstract class Driver:
       attempts++
       is_first_read_ = false
     attempts.repeat:
-      catch --unwind=(it == attempts):
+      catch --unwind=(it == attempts - 1):
         with_timeout --ms=1_000:
           return read_data_no_catch_
     unreachable
