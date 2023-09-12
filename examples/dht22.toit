@@ -5,7 +5,7 @@
 import dhtxx
 import gpio
 
-GPIO_PIN_NUM ::=  14
+GPIO_PIN_NUM ::= 14
 
 main:
   pin := gpio.Pin GPIO_PIN_NUM
