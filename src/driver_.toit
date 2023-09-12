@@ -112,7 +112,8 @@ abstract class Driver:
     channel_out_.write start_signal
     response := channel_in_.read
     if response.size == 2 and (response.period 0) == 0 and (response.period 1) == 0:
-      // We are getting some spurious signals from the start signal.
+      // We are getting some spurious signals from the start signal,
+      // which we just ignore.
       response = channel_in_.read
     channel_in_.stop_reading
 
