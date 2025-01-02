@@ -26,12 +26,6 @@ class DhtResult:
     return "T: $(%.2f temperature), H: $(%.2f humidity)"
 
 abstract class Driver:
-  static HUMIDITY_INTEGRAL_PART_    ::= 0
-  static HUMIDITY_DECIMAL_PART_     ::= 1
-  static TEMPERATURE_INTEGRAL_PART_ ::= 2
-  static TEMPERATURE_DECIMAL_PART_  ::= 3
-  static CHECKSUM_PART_             ::= 4
-
   channel_in_    /rmt.Channel
   channel_out_   /rmt.Channel
   max_retries_   /int

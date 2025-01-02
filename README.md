@@ -10,7 +10,17 @@ lot of code.
 
 ## Implementation details
 
-The DHT11 and DHT22 drivers are timing sensitive, and the drivers are therefore implemented using the RMT controller which allows for precise timings.
+The DHT11 and DHT22 drivers are timing sensitive, and the drivers are therefore implemented
+using the RMT controller which allows for precise timings.
+
+## Compatibility
+
+The driver has been tested on DHT11 and DHT22 sensors.
+
+It should work with other sensors that use the same protocol:
+DHT12, KY-015, DHT33, AM2320, AM2321, or AM2322.
+
+If you have one of these sensors, please let us know if it works.
 
 ## Features and bugs
 
