@@ -1,4 +1,6 @@
 name: dhtxx
-description: Drivers for the DHT11 and DHT22 (aka AM2302 or RHT03) humidity and temperature sensors.
+description: |
+  Drivers for the DHT11 and DHT22 (aka AM2302 or RHT03) humidity and temperature sensors.
+  Other compatible sensors: DHT12, KY-015, DHT33, AM2320, AM2321, or AM2322.
 environment:
   sdk: ^2.0.0-alpha.1
