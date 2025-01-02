@@ -3,7 +3,7 @@
 // in the LICENSE file.
 
 import gpio
-import binary show BIG_ENDIAN
+import io show BIG_ENDIAN
 import .driver_ as driver
 
 class Dht22 extends driver.Driver:
