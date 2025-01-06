@@ -8,7 +8,7 @@ import .driver_ as driver
 /**
 Driver for the DHT11 sensor.
 
-Should also work for compatible sensors like the DHT12, or KY-015.
+Should also work for compatible sensors like the DHT12 or KY-015.
 */
 class Dht11 extends driver.Driver:
   static HUMIDITY_INTEGRAL_PART_    ::= 0

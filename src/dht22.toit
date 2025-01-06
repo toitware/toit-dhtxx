@@ -32,9 +32,12 @@ class Dht22 extends driver.Driver:
     // encode the value as 2's complement.
     // Since valid temperature values can only be in a small range, we can use the
     // second bit to determine which approach the sensor uses.
+    // If the first two bits were 1 and the sensor wasn't using 2's complement, then
+    // the temperature would be lower than -64 degrees which is outside the supported
+    // range.
     byte1 := data[TEMPERATURE_INDEX_]
     temperature10/int := ?
-    if (byte1 & 0x80 == 0) or (byte1 & 0x04 == 1):
+    if (byte1 & 0x80 == 0) or (byte1 & 0x40 == 1):
       // The temperature is positive or the sensor uses 2's complement.
       temperature10 = BIG-ENDIAN.int16 data TEMPERATURE_INDEX_
     else:
