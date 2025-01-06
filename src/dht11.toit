@@ -11,24 +11,24 @@ Driver for the DHT11 sensor.
 Should also work for compatible sensors like the DHT12 or KY-015.
 */
 class Dht11 extends driver.Driver:
-  static HUMIDITY_INTEGRAL_PART_    ::= 0
-  static HUMIDITY_DECIMAL_PART_     ::= 1
-  static TEMPERATURE_INTEGRAL_PART_ ::= 2
-  static TEMPERATURE_DECIMAL_PART_  ::= 3
+  static HUMIDITY-INTEGRAL-PART_    ::= 0
+  static HUMIDITY-DECIMAL-PART_     ::= 1
+  static TEMPERATURE-INTEGRAL-PART_ ::= 2
+  static TEMPERATURE-DECIMAL-PART_  ::= 3
 
   /**
   Constructs an instance of the Dht11 driver.
   Uses RMT (ESP's Remote Control peripheral) to talk to the sensor. It allocates
-    two RMT channels. If the $in_channel_id and/or $out_channel_id is provided, uses
+    two RMT channels. If the $in-channel-id and/or $out-channel-id is provided, uses
     those channels, otherwise picks the first free ones.
   When the communication between the DHT11 and the device is flaky tries up to
-    $max_retries before giving up.
+    $max-retries before giving up.
   */
-  constructor pin/gpio.Pin --in_channel_id/int?=null --out_channel_id/int?=null --max_retries/int=3:
-    super pin --in_channel_id=in_channel_id --out_channel_id=out_channel_id --max_retries=max_retries
+  constructor pin/gpio.Pin --in-channel-id/int?=null --out-channel-id/int?=null --max-retries/int=3:
+    super pin --in-channel-id=in-channel-id --out-channel-id=out-channel-id --max-retries=max-retries
 
-  parse_temperature_ data/ByteArray -> float:
-    return data[TEMPERATURE_INTEGRAL_PART_].to-float + data[TEMPERATURE_DECIMAL_PART_] * 0.1
+  parse-temperature_ data/ByteArray -> float:
+    return data[TEMPERATURE-INTEGRAL-PART_].to-float + data[TEMPERATURE-DECIMAL-PART_] * 0.1
 
-  parse_humidity_ data/ByteArray -> float:
-    return data[HUMIDITY_INTEGRAL_PART_].to-float + data[HUMIDITY_DECIMAL_PART_] * 0.1
+  parse-humidity_ data/ByteArray -> float:
+    return data[HUMIDITY-INTEGRAL-PART_].to-float + data[HUMIDITY-DECIMAL-PART_] * 0.1
