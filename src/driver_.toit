@@ -18,74 +18,74 @@ class DhtResult:
   operator == other/any -> bool:
     return other is DhtResult and temperature == other.temperature and humidity == other.humidity
 
-  hash_code -> int:
-    return (temperature * 10).to_int * 11 + (humidity * 10).to_int * 13
+  hash-code -> int:
+    return (temperature * 10).to-int * 11 + (humidity * 10).to-int * 13
 
   /** See $super. */
   stringify -> string:
     return "T: $(%.2f temperature), H: $(%.2f humidity)"
 
 abstract class Driver:
-  channel_in_    /rmt.Channel
-  channel_out_   /rmt.Channel
-  max_retries_   /int
-  is_first_read_ /bool := true
+  channel-in_    /rmt.Channel
+  channel-out_   /rmt.Channel
+  max-retries_   /int
+  is-first-read_ /bool := true
 
-  ready_time_/Time? := ?
+  ready-time_/Time? := ?
 
-  constructor pin/gpio.Pin --in_channel_id/int?=null --out_channel_id/int?=null --max_retries/int:
-    max_retries_ = max_retries
+  constructor pin/gpio.Pin --in-channel-id/int?=null --out-channel-id/int?=null --max-retries/int:
+    max-retries_ = max-retries
 
     // The out channel must be configured before the in channel, so that make_bidirectional works.
-    channel_out_ = rmt.Channel pin
+    channel-out_ = rmt.Channel pin
         --output
-        --channel_id=out_channel_id
-        --idle_level=1
-    channel_in_ = rmt.Channel --input pin
-        --channel_id=in_channel_id
-        --filter_ticks_threshold=20
-        --idle_threshold=100
+        --channel-id=out-channel-id
+        --idle-level=1
+    channel-in_ = rmt.Channel --input pin
+        --channel-id=in-channel-id
+        --filter-ticks-threshold=20
+        --idle-threshold=100
 
-    rmt.Channel.make_bidirectional --in=channel_in_ --out=channel_out_
+    rmt.Channel.make-bidirectional --in=channel-in_ --out=channel-out_
 
-    ready_time_ = Time.now + (Duration --s=1)
+    ready-time_ = Time.now + (Duration --s=1)
 
   /** Reads the humidity and temperature. */
   read -> DhtResult:
-    data := read_data_
+    data := read-data_
 
     return DhtResult.init_
-        parse_temperature_ data
-        parse_humidity_ data
+        parse-temperature_ data
+        parse-humidity_ data
 
   /** Reads the temperature. */
-  read_temperature -> float:
-    return parse_temperature_ read_data_
+  read-temperature -> float:
+    return parse-temperature_ read-data_
 
   /** Reads the humidity. */
-  read_humidity -> float:
-    return parse_humidity_ read_data_
+  read-humidity -> float:
+    return parse-humidity_ read-data_
 
-  abstract parse_temperature_ data/ByteArray -> float
-  abstract parse_humidity_ data/ByteArray -> float
+  abstract parse-temperature_ data/ByteArray -> float
+  abstract parse-humidity_ data/ByteArray -> float
 
   /** Checks that the data's checksum matches the humidity and temperature data. */
-  check_checksum_ data/ByteArray:
+  check-checksum_ data/ByteArray:
     if not (data.size == 5 and (data[0] + data[1] + data[2] + data[3]) & 0xFF == data[4]):
       throw "Invalid checksum"
 
-  read_data_ -> ByteArray:
-    attempts := max_retries_ + 1
-    if is_first_read_:
+  read-data_ -> ByteArray:
+    attempts := max-retries_ + 1
+    if is-first-read_:
       // Due to the way we set up the RMT channels, there might be some
       // pulses on the data line which can confuse the DHT. The very first
       // read thus sometimes fails.
       attempts++
-      is_first_read_ = false
+      is-first-read_ = false
     attempts.repeat:
       catch --unwind=(it == attempts - 1):
-        with_timeout --ms=1_000:
-          return read_data_no_catch_
+        with-timeout --ms=1_000:
+          return read-data-no-catch_
     unreachable
 
   /**
@@ -96,20 +96,20 @@ abstract class Driver:
 
   The DHTxx receiver must send the expected signals.
   */
-  read_data_no_catch_ -> ByteArray:
-    if ready_time_: wait_for_ready_
+  read-data-no-catch_ -> ByteArray:
+    if ready-time_: wait-for-ready_
 
     // Pull low for 20ms to start the transmission.
-    start_signal := rmt.Signals 1
-    start_signal.set 0 --level=0 --period=20_000
-    channel_in_.start_reading
-    channel_out_.write start_signal
-    response := channel_in_.read
+    start-signal := rmt.Signals 1
+    start-signal.set 0 --level=0 --period=20_000
+    channel-in_.start-reading
+    channel-out_.write start-signal
+    response := channel-in_.read
     if response.size == 2 and (response.period 0) == 0 and (response.period 1) == 0:
       // We are getting some spurious signals from the start signal,
       // which we just ignore.
-      response = channel_in_.read
-    channel_in_.stop_reading
+      response = channel-in_.read
+    channel-in_.stop-reading
 
     // We expect to see:
     // - high after the start-signal (level=1, ~24-40us)
@@ -127,18 +127,18 @@ abstract class Driver:
     // We only need to look at the 1s.
 
     offset := 4  // Skip over the initial handshake, and the 0 of the first bit.
-    result_data := ByteArray 5: 0
+    result-data := ByteArray 5: 0
     40.repeat:
       bit := (response.period 2 * it + offset) > 32 ? 1 : 0
       index := it / 8
-      result_data[index] <<= 1
-      result_data[index] = result_data[index] | bit
+      result-data[index] <<= 1
+      result-data[index] = result-data[index] | bit
 
-    check_checksum_ result_data
-    return result_data
+    check-checksum_ result-data
+    return result-data
 
-  wait_for_ready_:
-    duration_until_ready := ready_time_.to_now
-    if duration_until_ready > Duration.ZERO: sleep duration_until_ready
+  wait-for-ready_:
+    duration-until-ready := ready-time_.to-now
+    if duration-until-ready > Duration.ZERO: sleep duration-until-ready
 
-    ready_time_ = null
+    ready-time_ = null
