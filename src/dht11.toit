@@ -5,7 +5,16 @@
 import gpio
 import .driver_ as driver
 
+/**
+Driver for the DHT11 sensor.
+
+Should also work for compatible sensors like the DHT12 or KY-015.
+*/
 class Dht11 extends driver.Driver:
+  static HUMIDITY_INTEGRAL_PART_    ::= 0
+  static HUMIDITY_DECIMAL_PART_     ::= 1
+  static TEMPERATURE_INTEGRAL_PART_ ::= 2
+  static TEMPERATURE_DECIMAL_PART_  ::= 3
 
   /**
   Constructs an instance of the Dht11 driver.
@@ -19,7 +28,7 @@ class Dht11 extends driver.Driver:
     super pin --in_channel_id=in_channel_id --out_channel_id=out_channel_id --max_retries=max_retries
 
   parse_temperature_ data/ByteArray -> float:
-    return data[driver.Driver.TEMPERATURE_INTEGRAL_PART_].to_float
+    return data[TEMPERATURE_INTEGRAL_PART_].to-float + data[TEMPERATURE_DECIMAL_PART_] * 0.1
 
   parse_humidity_ data/ByteArray -> float:
-    return data[driver.Driver.HUMIDITY_INTEGRAL_PART_].to_float
+    return data[HUMIDITY_INTEGRAL_PART_].to-float + data[HUMIDITY_DECIMAL_PART_] * 0.1

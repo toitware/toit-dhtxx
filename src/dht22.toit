@@ -6,7 +6,14 @@ import gpio
 import io show BIG_ENDIAN
 import .driver_ as driver
 
+/**
+Driver for the DHT22 sensor.
+
+Should also work for compatible sensors like the DHT33, AM2320, AM2321, or AM2322.
+*/
 class Dht22 extends driver.Driver:
+  static HUMIDITY_INDEX_    ::= 0
+  static TEMPERATURE_INDEX_ ::= 2
 
   /**
   Constructs an instance of the Dht22 driver.
@@ -20,7 +27,24 @@ class Dht22 extends driver.Driver:
     super pin --in_channel_id=in_channel_id --out_channel_id=out_channel_id --max_retries=max_retries
 
   parse_temperature_ data/ByteArray -> float:
-    return (BIG_ENDIAN.uint16 data driver.Driver.TEMPERATURE_INTEGRAL_PART_) / 10.0
+    // The temperature is a big-endian 16-bit integer.
+    // Some sensors use the first bit to indicate the sign of the temperature; others
+    // encode the value as 2's complement.
+    // Since valid temperature values can only be in a small range, we can use the
+    // second bit to determine which approach the sensor uses.
+    // If the first two bits were 1 and the sensor wasn't using 2's complement, then
+    // the temperature would be lower than -64 degrees which is outside the supported
+    // range.
+    byte1 := data[TEMPERATURE_INDEX_]
+    temperature10/int := ?
+    if (byte1 & 0x80 == 0) or (byte1 & 0x40 == 1):
+      // The temperature is positive or the sensor uses 2's complement.
+      temperature10 = BIG-ENDIAN.int16 data TEMPERATURE_INDEX_
+    else:
+      // The temperature is negative, but the sensor uses the first bit to indicate the sign.
+      temperature10 = BIG-ENDIAN.uint16 data TEMPERATURE_INDEX_
+      temperature10 = -(temperature10 & 0x7FFF)
+    return temperature10 * 0.1
 
   parse_humidity_ data/ByteArray -> float:
-    return (BIG_ENDIAN.uint16 data driver.Driver.HUMIDITY_INTEGRAL_PART_) / 10.0
+    return (BIG_ENDIAN.uint16 data HUMIDITY_INDEX_) * 0.1
