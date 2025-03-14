@@ -26,8 +26,8 @@ class DhtResult:
     return "T: $(%.2f temperature), H: $(%.2f humidity)"
 
 abstract class Driver:
-  channel-in_    /rmt.Channel
-  channel-out_   /rmt.Channel
+  channel-in_    /rmt.Channel? := ?
+  channel-out_   /rmt.Channel? := ?
   max-retries_   /int
   is-first-read_ /bool := true
 
@@ -49,6 +49,14 @@ abstract class Driver:
     rmt.Channel.make-bidirectional --in=channel-in_ --out=channel-out_
 
     ready-time_ = Time.now + (Duration --s=1)
+
+  close -> none:
+    if channel-in_:
+      channel-in_.close
+      channel-in_ = null
+    if channel-out_:
+      channel-out_.close
+      channel-out_ = null
 
   /** Reads the humidity and temperature. */
   read -> DhtResult:
