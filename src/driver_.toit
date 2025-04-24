@@ -44,7 +44,7 @@ abstract class Driver:
     channel-in_ = rmt.Channel --input pin
         --channel-id=in-channel-id
         --filter-ticks-threshold=20
-        --idle-threshold=100
+        --idle-threshold=25_000
 
     rmt.Channel.make-bidirectional --in=channel-in_ --out=channel-out_
 
@@ -112,14 +112,10 @@ abstract class Driver:
     start-signal.set 0 --level=0 --period=20_000
     channel-in_.start-reading
     channel-out_.write start-signal
-    response := channel-in_.read
-    if response.size == 2 and (response.period 0) == 0 and (response.period 1) == 0:
-      // We are getting some spurious signals from the start signal,
-      // which we just ignore.
-      response = channel-in_.read
-    channel-in_.stop-reading
+    response := channel-in_.read --stop-reading
 
     // We expect to see:
+    // - the start signal (20ms of low).
     // - high after the start-signal (level=1, ~24-40us)
     // - DHT response signal (80us)
     // - DHT high after response signal (80us)
@@ -128,13 +124,16 @@ abstract class Driver:
     //   * high: 26-28us for 0, or 70us for 1
     // - a trailing 0.
 
-    if response.size < 3 + 40 * 2:
+    if response.size < 4 + 40 * 2:
       throw "insufficient signals from DHT"
+
+    if (response.level 0) != 0 or not 19_000 <= (response.period 0) <= 21_000:
+      throw "start signal not detected"
 
     // Each bit starts with 50us low, followed by ~25us for 0 or ~70us for 1.
     // We only need to look at the 1s.
 
-    offset := 4  // Skip over the initial handshake, and the 0 of the first bit.
+    offset := 5  // Skip over the start signal, initial handshake, and the 0 of the first bit.
     result-data := ByteArray 5: 0
     40.repeat:
       bit := (response.period 2 * it + offset) > 32 ? 1 : 0
