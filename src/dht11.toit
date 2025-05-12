@@ -16,16 +16,24 @@ class Dht11 extends driver.Driver:
   static TEMPERATURE-INTEGRAL-PART_ ::= 2
   static TEMPERATURE-DECIMAL-PART_  ::= 3
 
+  /** Deprecated. Channel ids can't be used anymore and are ignored. */
+  constructor pin/gpio.Pin --in-channel-id/int --out-channel-id/int?=null --max-retries/int:
+    return Dht11 pin --max-retries=max-retries
+
+  /** Deprecated. Channel ids can't be used anymore and are ignored. */
+  constructor pin/gpio.Pin --out-channel-id/int --max-retries/int:
+    return Dht11 pin --max-retries=max-retries
+
   /**
-  Constructs an instance of the Dht11 driver.
-  Uses RMT (ESP's Remote Control peripheral) to talk to the sensor. It allocates
-    two RMT channels. If the $in-channel-id and/or $out-channel-id is provided, uses
-    those channels, otherwise picks the first free ones.
+  Constructs an instance of the DHT11 driver.
+  Uses RMT (ESP's Remote Control peripheral) to talk to the sensor. Allocates
+    two RMT channels, one for reading, and one for writing.
+
   When the communication between the DHT11 and the device is flaky tries up to
     $max-retries before giving up.
   */
-  constructor pin/gpio.Pin --in-channel-id/int?=null --out-channel-id/int?=null --max-retries/int=3:
-    super pin --in-channel-id=in-channel-id --out-channel-id=out-channel-id --max-retries=max-retries
+  constructor pin/gpio.Pin --max-retries/int=3:
+    super pin --max-retries=max-retries
 
   parse-temperature_ data/ByteArray -> float:
     return data[TEMPERATURE-INTEGRAL-PART_].to-float + data[TEMPERATURE-DECIMAL-PART_] * 0.1
