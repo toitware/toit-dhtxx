@@ -26,27 +26,23 @@ class DhtResult:
     return "T: $(%.2f temperature), H: $(%.2f humidity)"
 
 abstract class Driver:
-  channel-in_    /rmt.Channel? := ?
-  channel-out_   /rmt.Channel? := ?
+  channel-in_    /rmt.In? := ?
+  channel-out_   /rmt.Out? := ?
   max-retries_   /int
   is-first-read_ /bool := true
 
   ready-time_/Time? := ?
 
-  constructor pin/gpio.Pin --in-channel-id/int?=null --out-channel-id/int?=null --max-retries/int:
+  constructor pin/gpio.Pin --max-retries/int:
     max-retries_ = max-retries
 
-    // The out channel must be configured before the in channel, so that make_bidirectional works.
-    channel-out_ = rmt.Channel pin
-        --output
-        --channel-id=out-channel-id
-        --idle-level=1
-    channel-in_ = rmt.Channel --input pin
-        --channel-id=in-channel-id
-        --filter-ticks-threshold=20
-        --idle-threshold=25_000
+    channel-in_ = rmt.In pin --resolution=1_000_000
+    channel-out_ = rmt.Out pin --resolution=1_000_000 --open-drain
 
-    rmt.Channel.make-bidirectional --in=channel-in_ --out=channel-out_
+    high-signal := rmt.Signals 1
+    high-signal.set 0 --level=1 --period=20
+    // Set the line to 1.
+    channel-out_.write high-signal --done-level=1
 
     ready-time_ = Time.now + (Duration --s=1)
 
@@ -93,7 +89,11 @@ abstract class Driver:
     attempts.repeat:
       catch --unwind=(it == attempts - 1):
         with-timeout --ms=1_000:
-          return read-data-no-catch_
+          try:
+            return read-data-no-catch_
+          finally:
+            if channel-in_.is-reading:
+              channel-in_.reset
     unreachable
 
   /**
@@ -108,11 +108,12 @@ abstract class Driver:
     if ready-time_: wait-for-ready_
 
     // Pull low for 20ms to start the transmission.
+    // The resolution of the RMT is set to 1MHz, so the period is 1us.
     start-signal := rmt.Signals 1
     start-signal.set 0 --level=0 --period=20_000
-    channel-in_.start-reading
-    channel-out_.write start-signal
-    response := channel-in_.read --stop-reading
+    channel-in_.start-reading --min-ns=1_000 --max-ns=25_000_000
+    channel-out_.write start-signal --done-level=1
+    response := channel-in_.wait-for-data
 
     // We expect to see:
     // - the start signal (20ms of low).
