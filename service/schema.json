@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-2020-12/schema",
+  "$id": "https://github.com/toitware/toit-dhtxx/service/schema.json",
+  "title": "DHTxx Configuration",
+  "description": "Configuration for the DHT11 or DHT22 temperature sensor.",
+  "type": "object",
+  "required": [
+    "pin",
+    "variant"
+  ],
+  "properties": {
+    "pin": {
+      "type": "integer",
+      "description": "The GPIO pin number to which the DS18B20 is connected."
+    },
+    "variant": {
+      "type": "enum",
+      "enum": [
+        "11",
+        "22"
+      ],
+      "description": "The variant of the DHTxx sensor."
+    }
+  }
+}
