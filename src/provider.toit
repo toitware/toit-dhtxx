@@ -31,7 +31,7 @@ class TemperatureSensor
   temperature-read -> float?:
     return sensor_.read-temperature
 
-  humidity-read -> float:
+  humidity-read -> float?:
     return sensor_.read-humidity
 
   close -> none:
