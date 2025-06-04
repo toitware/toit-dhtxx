@@ -56,3 +56,6 @@ class Dht22 extends driver.Driver:
 
   parse-humidity_ data/ByteArray -> float:
     return (BIG-ENDIAN.uint16 data HUMIDITY-INDEX_) * 0.1
+
+  start-duration-us_ -> int:
+    return 2_000

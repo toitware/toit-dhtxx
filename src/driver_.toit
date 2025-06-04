@@ -31,8 +31,6 @@ abstract class Driver:
   max-retries_   /int
   is-first-read_ /bool := true
 
-  ready-time_/Time? := ?
-
   constructor pin/gpio.Pin --max-retries/int:
     max-retries_ = max-retries
 
@@ -43,8 +41,6 @@ abstract class Driver:
     high-signal.set 0 --level=1 --period=20
     // Set the line to 1.
     channel-out_.write high-signal --done-level=1
-
-    ready-time_ = Time.now + (Duration --s=1)
 
   close -> none:
     if channel-in_:
@@ -72,6 +68,8 @@ abstract class Driver:
 
   abstract parse-temperature_ data/ByteArray -> float
   abstract parse-humidity_ data/ByteArray -> float
+  // The duration of the start signal in microseconds.
+  abstract start-duration-us_ -> int
 
   /** Checks that the data's checksum matches the humidity and temperature data. */
   check-checksum_ data/ByteArray:
@@ -105,18 +103,19 @@ abstract class Driver:
   The DHTxx receiver must send the expected signals.
   */
   read-data-no-catch_ -> ByteArray:
-    if ready-time_: wait-for-ready_
-
-    // Pull low for 20ms to start the transmission.
+    // Pull low for the trigger duration to start the transmission.
     // The resolution of the RMT is set to 1MHz, so the period is 1us.
     start-signal := rmt.Signals 1
-    start-signal.set 0 --level=0 --period=20_000
-    channel-in_.start-reading --min-ns=1_000 --max-ns=25_000_000
+    start-us := start-duration-us_
+    start-signal.set 0 --level=0 --period=start-us
+    // The trigger signal is, by far, the longest signal we intend to capture.
+    max-ns := (start-us + 2) * 1_000
+    channel-in_.start-reading --min-ns=1_000 --max-ns=max-ns
     channel-out_.write start-signal --done-level=1
     response := channel-in_.wait-for-data
 
     // We expect to see:
-    // - the start signal (20ms of low).
+    // - the start signal (low. 18ms for DHT11, 1ms for DHT22)
     // - high after the start-signal (level=1, ~24-40us)
     // - DHT response signal (80us)
     // - DHT high after response signal (80us)
@@ -128,7 +127,7 @@ abstract class Driver:
     if response.size < 4 + 40 * 2:
       throw "insufficient signals from DHT"
 
-    if (response.level 0) != 0 or not 19_000 <= (response.period 0) <= 21_000:
+    if (response.level 0) != 0 or not (start-us - 100) <= (response.period 0):
       throw "start signal not detected"
 
     // Each bit starts with 50us low, followed by ~25us for 0 or ~70us for 1.
@@ -144,9 +143,3 @@ abstract class Driver:
 
     check-checksum_ result-data
     return result-data
-
-  wait-for-ready_:
-    duration-until-ready := ready-time_.to-now
-    if duration-until-ready > Duration.ZERO: sleep duration-until-ready
-
-    ready-time_ = null
