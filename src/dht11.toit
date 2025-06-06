@@ -40,3 +40,6 @@ class Dht11 extends driver.Driver:
 
   parse-humidity_ data/ByteArray -> float:
     return data[HUMIDITY-INTEGRAL-PART_].to-float + data[HUMIDITY-DECIMAL-PART_] * 0.1
+
+  start-duration-us_ -> int:
+    return 18_000
