@@ -31,6 +31,12 @@ abstract class Driver:
   max-retries_   /int
   is-first-read_ /bool := true
 
+  // The DHT11 updates at most every second. The DHT22 even only every 2 seconds.
+  // Since the sensor doesn't even respond if we query it too often, we just
+  // cache the last result and return it if the user tries to read too often.
+  last-read-time-us_ /int := -1
+  last-result_ /ByteArray? := null
+
   constructor pin/gpio.Pin --max-retries/int:
     max-retries_ = max-retries
 
@@ -50,7 +56,13 @@ abstract class Driver:
       channel-out_.close
       channel-out_ = null
 
-  /** Reads the humidity and temperature. */
+  /**
+  Reads the humidity and temperature.
+
+  DHT sensors update their values relatively slowly (1Hz). The
+    driver thus caches the last read value and returns it if called again
+    too soon.
+  */
   read -> DhtResult:
     data := read-data_
 
@@ -58,11 +70,25 @@ abstract class Driver:
         parse-temperature_ data
         parse-humidity_ data
 
-  /** Reads the temperature. */
+  /**
+  Reads the temperature.
+
+  DHT sensors update their values relatively slowly (1Hz). The
+    driver thus caches the last read value and returns it if called again
+    too soon. This makes it possible to read temperature and humidity
+    separately without incurring the cost of two reads.
+  */
   read-temperature -> float:
     return parse-temperature_ read-data_
 
-  /** Reads the humidity. */
+  /**
+  Reads the humidity.
+
+  DHT sensors update their values relatively slowly (1Hz). The
+    driver thus caches the last read value and returns it if called again
+    too soon. This makes it possible to read temperature and humidity
+    separately without incurring the cost of two reads.
+  */
   read-humidity -> float:
     return parse-humidity_ read-data_
 
@@ -77,6 +103,9 @@ abstract class Driver:
       throw "Invalid checksum"
 
   read-data_ -> ByteArray:
+    current-time-us := Time.monotonic-us
+    if current-time-us - last-read-time-us_ < 500_000:
+      return last-result_
     attempts := max-retries_ + 1
     if is-first-read_:
       // Due to the way we set up the RMT channels, there might be some
@@ -88,7 +117,9 @@ abstract class Driver:
       catch --unwind=(it == attempts - 1):
         with-timeout --ms=1_000:
           try:
-            return read-data-no-catch_
+            last-result_ = read-data-no-catch_
+            last-read-time-us_ = Time.monotonic-us
+            return last-result_
           finally:
             if channel-in_.is-reading:
               channel-in_.reset
