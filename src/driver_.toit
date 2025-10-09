@@ -34,8 +34,7 @@ abstract class Driver:
   // The DHT11 updates at most every second. The DHT22 even only every 2 seconds.
   // Since the sensor doesn't even respond if we query it too often, we just
   // cache the last result and return it if the user tries to read too often.
-  // Set it to max, so the first read always goes through.
-  last-read-time-us_ /int := int.MAX
+  last-read-time-us_ /int := 0
   last-result_ /ByteArray? := null
 
   constructor pin/gpio.Pin --max-retries/int:
@@ -105,7 +104,7 @@ abstract class Driver:
 
   read-data_ -> ByteArray:
     current-time-us := Time.monotonic-us
-    if current-time-us - last-read-time-us_ < 500_000:
+    if last-result_ and current-time-us - last-read-time-us_ < 500_000:
       return last-result_
     attempts := max-retries_ + 1
     if is-first-read_:
