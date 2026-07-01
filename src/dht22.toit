@@ -15,12 +15,26 @@ class Dht22 extends driver.Driver:
   static HUMIDITY-INDEX_    ::= 0
   static TEMPERATURE-INDEX_ ::= 2
 
-  /** Deprecated. Channel ids can't be used anymore and are ignored. */
-  constructor pin/gpio.Pin --in-channel-id/int --out-channel-id/int?=null --max-retries/int:
+  /**
+  Deprecated. Channel ids can't be used anymore and are ignored.
+
+  The $pin is a GPIO number. Passing a $gpio.Pin is deprecated; provide the integer
+    GPIO number instead.
+  */
+  // __TYPE-MIGRATION__ pin: gpio.Pin. Deprecated. Provide an integer instead.
+  // __TYPE-MIGRATION__ pin: int
+  constructor pin/any --in-channel-id/int --out-channel-id/int?=null --max-retries/int:
     return Dht22 pin --max-retries=max-retries
 
-  /** Deprecated. Channel ids can't be used anymore and are ignored. */
-  constructor pin/gpio.Pin --out-channel-id/int --max-retries/int:
+  /**
+  Deprecated. Channel ids can't be used anymore and are ignored.
+
+  The $pin is a GPIO number. Passing a $gpio.Pin is deprecated; provide the integer
+    GPIO number instead.
+  */
+  // __TYPE-MIGRATION__ pin: gpio.Pin. Deprecated. Provide an integer instead.
+  // __TYPE-MIGRATION__ pin: int
+  constructor pin/any --out-channel-id/int --max-retries/int:
     return Dht22 pin --max-retries=max-retries
 
   /**
@@ -30,8 +44,13 @@ class Dht22 extends driver.Driver:
 
   When the communication between the DHT22 and the device is flaky tries up to
     $max-retries before giving up.
+
+  The $pin is a GPIO number. Passing a $gpio.Pin is deprecated; provide the integer
+    GPIO number instead.
   */
-  constructor pin/gpio.Pin --max-retries/int=3:
+  // __TYPE-MIGRATION__ pin: gpio.Pin. Deprecated. Provide an integer instead.
+  // __TYPE-MIGRATION__ pin: int
+  constructor pin/any --max-retries/int=3:
     super pin --max-retries=max-retries
 
   parse-temperature_ data/ByteArray -> float:

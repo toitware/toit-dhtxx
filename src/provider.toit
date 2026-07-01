@@ -2,7 +2,6 @@
 // Use of this source code is governed by an MIT-style license that can be found
 // in the LICENSE file.
 
-import gpio
 import sensors.providers
 
 import .driver_ as dhtxx
@@ -17,16 +16,13 @@ class TemperatureSensor
     implements
       providers.TemperatureSensor-v1
       providers.HumiditySensor-v1:
-  pin_/gpio.Pin? := ?
   sensor_/dhtxx.Driver? := ?
 
   constructor.dht11 pin/int:
-    pin_ = gpio.Pin pin
-    sensor_ = dht11.Dht11 pin_
+    sensor_ = dht11.Dht11 pin
 
   constructor.dht22 pin/int:
-    pin_ = gpio.Pin pin
-    sensor_ = dht22.Dht22 pin_
+    sensor_ = dht22.Dht22 pin
 
   temperature-read -> float?:
     return sensor_.read-temperature
@@ -38,9 +34,6 @@ class TemperatureSensor
     if sensor_:
       sensor_.close
       sensor_ = null
-    if pin_:
-      pin_.close
-      pin_ = null
 
 install-dht11 pin/int -> providers.Provider:
   return install pin --variant="11"
