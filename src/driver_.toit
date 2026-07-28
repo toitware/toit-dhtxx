@@ -26,8 +26,7 @@ class DhtResult:
     return "T: $(%.2f temperature), H: $(%.2f humidity)"
 
 abstract class Driver:
-  channel-in_    /rmt.In? := ?
-  channel-out_   /rmt.Out? := ?
+  channels_      /rmt.ChannelInOut? := ?
   max-retries_   /int
   is-first-read_ /bool := true
 
@@ -37,24 +36,28 @@ abstract class Driver:
   last-read-time-us_ /int := 0
   last-result_ /ByteArray? := null
 
-  constructor pin/gpio.Pin --max-retries/int:
+  /**
+  Constructs a driver for a DHTxx sensor connected to the given $pin.
+
+  The $pin is a GPIO number. Passing a $gpio.Pin is deprecated; provide the integer
+    GPIO number instead.
+  */
+  // __TYPE-MIGRATION__ pin: gpio.Pin. Deprecated. Provide an integer instead.
+  // __TYPE-MIGRATION__ pin: int
+  constructor pin/any --max-retries/int:
     max-retries_ = max-retries
 
-    channel-in_ = rmt.In pin --resolution=1_000_000
-    channel-out_ = rmt.Out pin --resolution=1_000_000 --open-drain
+    channels_ = rmt.ChannelInOut pin --resolution=1_000_000 --open-drain
 
     high-signal := rmt.Signals 1
     high-signal.set 0 --level=1 --period=20
     // Set the line to 1.
-    channel-out_.write high-signal --done-level=1
+    channels_.out.write high-signal --done-level=1
 
   close -> none:
-    if channel-in_:
-      channel-in_.close
-      channel-in_ = null
-    if channel-out_:
-      channel-out_.close
-      channel-out_ = null
+    if channels_:
+      channels_.close
+      channels_ = null
 
   /**
   Reads the humidity and temperature.
@@ -121,8 +124,8 @@ abstract class Driver:
             last-read-time-us_ = Time.monotonic-us
             return last-result_
           finally:
-            if channel-in_.is-reading:
-              channel-in_.reset
+            if channels_.in.is-reading:
+              channels_.in.reset
     unreachable
 
   /**
@@ -141,9 +144,9 @@ abstract class Driver:
     start-signal.set 0 --level=0 --period=start-us
     // The trigger signal is, by far, the longest signal we intend to capture.
     max-ns := (start-us + 2) * 1_000
-    channel-in_.start-reading --min-ns=1_000 --max-ns=max-ns
-    channel-out_.write start-signal --done-level=1
-    response := channel-in_.wait-for-data
+    channels_.in.start-reading --min-ns=1_000 --max-ns=max-ns
+    channels_.out.write start-signal --done-level=1
+    response := channels_.in.wait-for-data
 
     // We expect to see:
     // - the start signal (low. 18ms for DHT11, 1ms for DHT22)
